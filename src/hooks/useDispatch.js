@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { StateContext } from "./StateProvider";
+import { StateContext } from "../context/StateProvider";
 
 const useDispatch = () => {
   const [, dispatch] = useContext(StateContext);
