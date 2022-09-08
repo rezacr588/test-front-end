@@ -1,20 +1,22 @@
+import { Box, Typography } from "@mui/material";
 import { useContext, useState } from "react";
 import { SearchBox } from "../components/SearchBox";
+import { mainUrl } from "../consts";
 import { StateContext } from "../context/StateProvider";
 
 const SearchBoxContainer = () => {
-  const [, dispatch] = useContext(StateContext);
+  const [{ searchTerm: selectedSearchTerm }, dispatch] =
+    useContext(StateContext);
 
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleSearchTerm = (e) => setSearchTerm(e.target.value);
+
   const handleOnSubmit = () => {
-    const url =
-      "https://newsapi.org/v2/everything?" +
-      "apiKey=855626963385476ca6f079a3bcdeb409&" +
-      "pageSize=6&q=" +
-      searchTerm;
+    const url = mainUrl + `&q=${searchTerm}`;
+
     const req = new Request(url);
+
     fetch(req)
       .then((response) => response.json())
       .then((responseData) => {
@@ -44,18 +46,33 @@ const SearchBoxContainer = () => {
             totalResults: responseData.totalResults
           }
         });
+        dispatch({
+          type: "deselectAllDomains"
+        });
       })
       .catch((e) => console.log(e));
   };
-  const handleOnClear = () => setSearchTerm("");
+
+  const handleOnClear = () => {
+    setSearchTerm("");
+    dispatch({
+      type: "search",
+      payload: {
+        searchTerm: ""
+      }
+    });
+  };
 
   return (
-    <SearchBox
-      onChange={handleSearchTerm}
-      onSubmit={handleOnSubmit}
-      value={searchTerm}
-      onClear={handleOnClear}
-    />
+    <Box display="flex" justifyContent="space-between">
+      <SearchBox
+        onChange={handleSearchTerm}
+        onSubmit={handleOnSubmit}
+        value={searchTerm}
+        onClearSearch={handleOnClear}
+      />
+      <Typography variant="h3">{selectedSearchTerm}</Typography>
+    </Box>
   );
 };
 

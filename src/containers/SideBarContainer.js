@@ -1,5 +1,6 @@
 import { DeleteRounded } from "@mui/icons-material";
 import {
+  Checkbox,
   IconButton,
   List,
   ListItem,
@@ -8,12 +9,13 @@ import {
   ListSubheader
 } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
+import { mainUrl } from "../consts";
 import { StateContext } from "../context/StateProvider";
-import useDispatch from "../context/useDispatch";
+import useDispatch from "../hooks/useDispatch";
 
 export const SideBarContainer = (props) => {
   const [state, setState] = useState([]);
-  const [{ searchTerm }] = useContext(StateContext);
+  const [{ searchTerm, selectedDomains, domains }] = useContext(StateContext);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -21,22 +23,45 @@ export const SideBarContainer = (props) => {
     if (data) setState(JSON.parse(data));
   }, [searchTerm]);
 
+  useEffect(() => {
+    const data = window.localStorage.getItem(props.name);
+    if (data) setState(JSON.parse(data));
+  }, [domains]);
+
   const handleOnFilter = (name) => {
-    const url =
-      "https://newsapi.org/v2/everything?" +
-      "apiKey=855626963385476ca6f079a3bcdeb409&" +
-      "pageSize=6&q=" +
-      name;
+    let url = mainUrl;
+
+    if (props.name === "topics") {
+      if (selectedDomains) url = url + "&domains=" + [...selectedDomains];
+      url = url + "&q=" + name;
+    }
+
+    if (props.name === "domains") {
+      if (searchTerm) url = url + "&q=" + searchTerm;
+      url = url + "&domains=" + [...selectedDomains, name];
+    }
+
     const req = new Request(url);
+
     fetch(req)
       .then((response) => response.json())
       .then((responseData) => {
-        dispatch({
-          type: "search",
-          payload: {
-            searchTerm: name
-          }
-        });
+        if (props.name === "topics")
+          dispatch({
+            type: "search",
+            payload: {
+              searchTerm: name
+            }
+          });
+
+        if (props.name === "domains")
+          dispatch({
+            type: "selectDomain",
+            payload: {
+              domain: name
+            }
+          });
+
         dispatch({
           type: "setData",
           payload: {
@@ -62,6 +87,71 @@ export const SideBarContainer = (props) => {
         (item) => item !== name
       )
     );
+    if (props.name === "domains") {
+      let url = mainUrl;
+
+      if (searchTerm) url = url + "&q=" + searchTerm;
+      url =
+        url +
+        "&domains=" +
+        [...selectedDomains.filter((item) => item !== name)];
+
+      const req = new Request(url);
+
+      fetch(req)
+        .then((response) => response.json())
+        .then((responseData) => {
+          dispatch({
+            type: "unselectDomain",
+            payload: {
+              domain: name
+            }
+          });
+          dispatch({
+            type: "setData",
+            payload: {
+              data: responseData.articles,
+              totalResults: responseData.totalResults
+            }
+          });
+        })
+        .catch((e) => console.log(e));
+    }
+  };
+
+  const handleSelect = (name) => {
+    if (selectedDomains.includes(name)) {
+      let url = mainUrl;
+
+      if (searchTerm) url = url + "&q=" + searchTerm;
+      url =
+        url +
+        "&domains=" +
+        [...selectedDomains.filter((item) => item !== name)];
+
+      const req = new Request(url);
+
+      fetch(req)
+        .then((response) => response.json())
+        .then((responseData) => {
+          dispatch({
+            type: "unselectDomain",
+            payload: {
+              domain: name
+            }
+          });
+          dispatch({
+            type: "setData",
+            payload: {
+              data: responseData.articles,
+              totalResults: responseData.totalResults
+            }
+          });
+        })
+        .catch((e) => console.log(e));
+    } else {
+      handleOnFilter(name);
+    }
   };
 
   return (
@@ -77,9 +167,19 @@ export const SideBarContainer = (props) => {
             </IconButton>
           }
         >
-          <ListItemButton onClick={() => handleOnFilter(text)}>
-            <ListItemText key={text} id={text} primary={text} />
-          </ListItemButton>
+          {props.name === "topics" ? (
+            <ListItemButton onClick={() => handleOnFilter(text)}>
+              <ListItemText key={text} id={text} primary={text} />
+            </ListItemButton>
+          ) : (
+            <ListItemButton onClick={() => handleSelect(text)}>
+              <Checkbox
+                checked={selectedDomains.includes(text)}
+                inputProps={{ "aria-label": "controlled" }}
+              />
+              <ListItemText key={text} id={text} primary={text} />
+            </ListItemButton>
+          )}
         </ListItem>
       ))}
     </List>

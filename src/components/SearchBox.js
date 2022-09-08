@@ -9,7 +9,7 @@ export const SearchBox = (props) => (
     InputProps={{
       startAdornment: (
         <InputAdornment position="start">
-          <IconButton onClick={props.onClear}>
+          <IconButton onClick={props.onClearSearch}>
             <CloseSharp />
           </IconButton>
         </InputAdornment>
