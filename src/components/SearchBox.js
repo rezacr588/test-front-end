@@ -6,6 +6,7 @@ export const SearchBox = (props) => (
     {...props}
     type="text"
     variant="outlined"
+    ref={props.reference}
     InputProps={{
       startAdornment: (
         <InputAdornment position="start">
